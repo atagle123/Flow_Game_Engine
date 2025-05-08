@@ -10,8 +10,8 @@ from src.utils.training import Trainer
 
 
 CONFIG_PATH = "../configs/D4RL"
-MEMORY_FRACTION = "0.4"
-PREALLOCATE_MEMORY = "false"
+MEMORY_FRACTION = "0.75"
+PREALLOCATE_MEMORY = "true"
 WANDB_LOG = True
 VAL_DATASET = True
 LOG_FREQ = 10000
@@ -28,7 +28,7 @@ class TrainingConfig:
     save_freq: int
     wandb_log : bool
     val_dataset : bool
-    dataset_path: str
+    dataset_filepath: str
 
 def configure_environment():
     """
@@ -43,6 +43,7 @@ def configure_environment():
                                 save_freq=SAVE_FREQ,
                                 wandb_log=WANDB_LOG,
                                 val_dataset=VAL_DATASET,
+                                dataset_filepath = DATASET_PATH
                                 )
     return TRAINING_CONFIG
 
