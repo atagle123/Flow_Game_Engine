@@ -1,4 +1,4 @@
-name: flow_game
+name: flow_game_engine
 channels:
   - defaults
   - conda-forge

@@ -31,7 +31,7 @@ class DataStorage:
 
     def download_data(self, filepath, filename):
         data = self._format_data()
-        
+        print(data)
         os.makedirs(filepath, exist_ok=True)
         np.savez(f"{filepath}/{filename}", **data)
 
