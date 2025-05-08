@@ -23,7 +23,7 @@ def env_loop(env, agent, storage):
 def main():
     """
     """
-    filepath = "data"
+    filepath = "logs/data"
     filename = "data_maze.npz"
     num_episodes = 100
 
