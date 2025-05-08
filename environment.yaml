@@ -3,9 +3,16 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - python=3.10
+  - conda-build
+  - python=3.9
   - pip
   - numpy
   - gym
+  - tqdm=4.64.0
+  - hydra-core==1.3.2
+  - wandb
   - pip:
       - pygame
+      - "jax[cuda12]" 
+      - optax
+      - flax
