@@ -1,23 +1,48 @@
 import numpy as np
-from typing import Iterable, Optional
+from typing import Dict, Iterable, Optional, Tuple, Union
 import jax
 import jax.numpy as jnp
 
+DataType = Union[np.ndarray, Dict[str, "DataType"]]
 
-class Maze_Dataset:
+DatasetDict = Dict[str, DataType]
 
-    def __init__(self, filepath):
-        data = np.load(filepath)
-        self.dataset_dict = {key: data[key] for key in data.files}
-        self.preprocess_data()
-    
-    def preprocess_data(self):
-        pass
+def _check_lengths(dataset_dict: DatasetDict, dataset_len: Optional[int] = None) -> int:
+    for v in dataset_dict.values():
+        if isinstance(v, dict):
+            dataset_len = dataset_len or _check_lengths(v, dataset_len)
+        elif isinstance(v, np.ndarray):
+            item_len = len(v)
+            dataset_len = dataset_len or item_len
+            assert dataset_len == item_len, "Inconsistent item lengths in the dataset."
+        else:
+            raise TypeError("Unsupported type.")
+    return dataset_len
+
+def _subselect(dataset_dict: DatasetDict, index: np.ndarray) -> DatasetDict:
+    new_dataset_dict = {}
+    for k, v in dataset_dict.items():
+        if isinstance(v, dict):
+            new_v = _subselect(v, index)
+        elif isinstance(v, np.ndarray):
+            new_v = v[index]
+        else:
+            raise TypeError("Unsupported type.")
+        new_dataset_dict[k] = new_v
+    return new_dataset_dict
 
 
-    def sample_jax(self, batch_size: int, keys: Optional[Iterable[str]] = None):
+class Dataset(object):
+    def __init__(self, dataset_dict: DatasetDict, seed: Optional[int] = None): # TODO use seed
+        self.dataset_dict = dataset_dict
+        self.dataset_len = _check_lengths(dataset_dict)
+
+    def __len__(self) -> int:
+        return self.dataset_len
+
+    def sample_jax(self, batch_size: int, keys: Optional[Iterable[str]] = None): # TODO se puede hacer mas eficiente sacando llaves, tambien cambiar y agregar llaves
         if not hasattr(self, "rng"):
-            self.rng = jax.random.PRNGKey(self._seed or 42)
+            self.rng = jax.random.PRNGKey(42)
 
             if keys is None:
                 keys = self.dataset_dict.keys()
@@ -38,6 +63,34 @@ class Maze_Dataset:
             self._sample_jax = _sample_jax
 
         self.rng, sample = self._sample_jax(self.rng)
-        return sample        
+        return sample
+
+    def split(self, ratio: float) -> Tuple["Dataset", "Dataset"]:
+        assert 0 < ratio and ratio < 1
+        train_index = np.index_exp[: int(self.dataset_len * ratio)]
+        test_index = np.index_exp[int(self.dataset_len * ratio) :]
+
+        index = np.arange(len(self), dtype=np.int32)
+        self.np_random.shuffle(index)
+        train_index = index[: int(self.dataset_len * ratio)]
+        test_index = index[int(self.dataset_len * ratio) :]
+
+        train_dataset_dict = _subselect(self.dataset_dict, train_index)
+        test_dataset_dict = _subselect(self.dataset_dict, test_index)
+        return Dataset(train_dataset_dict), Dataset(test_dataset_dict)
+
+class Maze_Dataset(Dataset):
+
+    def __init__(self, filepath):
+
+        data = np.load(filepath)
+        dataset_dict = {key: data[key] for key in data.files}
+        dataset_dict = self.preprocess_data()
+
+        super().__init__(dataset_dict)
+    
+    def preprocess_data(self):
+        pass
+
 
         
