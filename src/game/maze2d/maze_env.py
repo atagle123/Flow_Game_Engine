@@ -36,7 +36,7 @@ class MazeEnv(gym.Env):
 
     def reset(self):
         self.player_pos = self.start_pos.copy()
-        return self._get_obs()
+        return self._get_obs(), self._get_full_obs()
 
     def step(self, action):
         x, y = self.player_pos
@@ -49,11 +49,24 @@ class MazeEnv(gym.Env):
 
         done = self.player_pos == self.goal_pos
         reward = 1 if done else -0.01
-        return self._get_obs(), reward, done, {}
+
+        return self._get_obs(), reward, done, self._get_full_obs() # 1 channel is the maze, other is the player pos, other the goal pos
+
+    def _get_full_obs(self):
+        pos_player_grid = np.zeros_like(self.maze)
+        pos_player_grid[self.player_pos[0]][self.player_pos[1]] = 1
+
+        goal_pos_grid = np.zeros_like(self.maze)
+        goal_pos_grid[self.goal_pos[0]][self.goal_pos[1]] = 1
+
+        full_obs = np.stack([self.maze, pos_player_grid, goal_pos_grid], axis=0)
+        return(full_obs)
+
 
     def _get_obs(self):
-        obs = np.zeros_like(self.maze)
-        obs[self.player_pos[0]][self.player_pos[1]] = 1  # mark player
+        #obs = np.zeros_like(self.maze)
+        #obs[self.player_pos[0]][self.player_pos[1]] = 1  # mark player
+        obs = np.array(self.player_pos)
         return obs
 
     def render(self, mode="human"):
