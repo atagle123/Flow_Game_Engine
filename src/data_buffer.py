@@ -1,7 +1,7 @@
 from typing import List
 from dataclasses import dataclass, field
 import numpy as np
-
+import os
 
 @dataclass
 class DataStorage:
@@ -29,9 +29,11 @@ class DataStorage:
             "dones": array_dones
         }
 
-    def download_data(self, filepath):
+    def download_data(self, filepath, filename):
         data = self._format_data()
-        np.savez(filepath, **data)
+        
+        os.makedirs(filepath, exist_ok=True)
+        np.savez(f"{filepath}/{filename}", **data)
 
 
 
