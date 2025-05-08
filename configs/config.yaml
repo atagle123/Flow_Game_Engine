@@ -1,0 +1,31 @@
+defaults:
+  - _self_
+
+exp_name: "flow_engine"
+seed: 685
+
+
+wandb:
+  wandb_exp_name: ${exp_name}_${seed}
+
+hydra:
+  run:
+    dir: ./logs/models/${exp_name}/${seed}
+
+savepath:  ./logs/models/${exp_name}/${seed}
+
+flow_model:
+  network:
+    time_emb: 128
+    hidden_dim: 256
+    num_blocks: 3
+    use_layer_norm: True
+    dropout_rate: 0.1
+    schedule: "vp"
+
+  train:
+    steps: 2000000
+    cosine_decay: True
+    ema_update: 0.001
+    batch_size: 1024
+    lr: 3e-4
