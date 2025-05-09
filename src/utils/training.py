@@ -1,13 +1,10 @@
 import os
-import gym
-import jax
-import jax.numpy as jnp
 from omegaconf import OmegaConf
 from tqdm import tqdm
 from utils.dataset import Maze_Dataset
 import wandb
 from typing import Dict
-     
+from models.flow import FlowLearner
 
 class Trainer:
     def __init__(self, cfg, training_cfg):
@@ -25,10 +22,10 @@ class Trainer:
     def train(self):
         dataset, dataset_val = self.load_dataset(self.training_cfg.dataset_filepath)
 
-        model_cls = self.cfg.method.agent._target_ # FLOW learner
-        agent = globals()[model_cls].create(self.cfg.seed, self.cfg.agent)
+        model_cls = FlowLearner
+        model = globals()[model_cls].create(self.cfg.seed, self.cfg.flow_model)
 
-        agent = self.train_loop(agent,
+        model = self.train_loop(model,
                          dataset,
                          dataset_val)
         wandb.finish()
@@ -50,13 +47,13 @@ class Trainer:
         if self.training_cfg.wandb_log: wandb.log({f"{prefix}/{k}": v for k, v in info.items()}, step=step)
 
 
-    def train_loop(self, agent, dataset, dataset_val):
+    def train_loop(self, model, dataset, dataset_val):
         keys = None
 
         for step in tqdm(range(1,self.cfg.train.steps+1), smoothing=0.1):
 
             sample = dataset.sample_jax(self.cfg.train.batch_size, keys=keys)
-            agent, info = agent.update(sample) 
+            model, info = model.update(sample) 
 
 
             if step % self.training_cfg.log_freq == 0:
@@ -64,11 +61,11 @@ class Trainer:
 
                 if dataset_val is not None:
                     val_batch = dataset_val.sample(self.cfg.train.batch_size, keys=keys)
-                    _, val_info= agent.update(val_batch)
+                    _, val_info= model.update(val_batch)
                     self.log_info(val_info, step, prefix="val")
             
             if step % self.training_cfg.save_freq == 0 or step==1:
-                agent.save(self.cfg.savepath, step)
+                model.save(self.cfg.savepath, step)
 
-        return agent
+        return model
     
