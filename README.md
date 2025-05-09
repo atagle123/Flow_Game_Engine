@@ -1,7 +1,7 @@
 
 # 🕹️ Flow Game Engine (Full-State Flow Matching)
 
-This repository contains a **toy implementation** of a **Flow Matching model** used as a **game engine**. The model operates on *fully observable* states, learning to transition a given state $x_t$ conditioned on an action $a_t$ to the next state $x_{t+1}$. Allowing it's utilization as a game engine. 
+This repository contains a **toy implementation** of a **Flow Matching model** used as a **game engine** in JAX/Flax. The model operates on *fully observable* states, learning to transition a given state $x_t$ conditioned on an action $a_t$ to the next state $x_{t+1}$. Allowing it's utilization as a game engine. 
 
 ### Extension to Partially Observable Processes
 
