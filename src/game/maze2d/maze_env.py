@@ -64,8 +64,6 @@ class MazeEnv(gym.Env):
 
 
     def _get_obs(self):
-        #obs = np.zeros_like(self.maze)
-        #obs[self.player_pos[0]][self.player_pos[1]] = 1  # mark player
         obs = np.array(self.player_pos)
         return obs
 

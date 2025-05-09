@@ -21,7 +21,7 @@ venv/
 # macOS and Linux system files
 .DS_Store
 Thumbs.db
-
+/logs
 # Python cache and logs
 *.log
 *.pot
