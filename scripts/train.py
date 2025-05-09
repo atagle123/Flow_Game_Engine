@@ -1,20 +1,16 @@
 import os
-import sys
 import logging
 import hydra
 from dataclasses import dataclass
-
-# Add the parent directory to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.utils.training import Trainer
 
 
-CONFIG_PATH = "../configs/D4RL"
+CONFIG_PATH = "../configs"
 MEMORY_FRACTION = "0.75"
 PREALLOCATE_MEMORY = "true"
 WANDB_LOG = False
 VAL_DATASET = True
-LOG_FREQ = 10000
+LOG_FREQ = 100
 SAVE_FREQ = 100000
 DATASET_PATH = "logs/data/data_maze.npz"
 

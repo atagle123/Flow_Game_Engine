@@ -1,10 +1,10 @@
 import os
 from omegaconf import OmegaConf
 from tqdm import tqdm
-from utils.dataset import Maze_Dataset
+from src.utils.dataset import Maze_Dataset
 import wandb
 from typing import Dict
-from models.flow import FlowLearner
+from src.models.flow import FlowLearner
 
 class Trainer:
     def __init__(self, cfg, training_cfg):
@@ -12,7 +12,7 @@ class Trainer:
         self.training_cfg = training_cfg
 
         if training_cfg.wandb_log:
-            wandb.init(project="SWG_JAX",
+            wandb.init(project="Flow_Game_Engine",
                        name=cfg.wandb.wandb_exp_name,
                        config=OmegaConf.to_container(cfg, resolve=True))
             
@@ -22,7 +22,7 @@ class Trainer:
     def train(self):
         dataset, dataset_val = self.load_dataset(self.training_cfg.dataset_filepath)
 
-        model_cls = FlowLearner
+        model_cls = "FlowLearner"
         model = globals()[model_cls].create(self.cfg.seed, self.cfg.flow_model)
 
         model = self.train_loop(model,
@@ -48,16 +48,16 @@ class Trainer:
     def train_loop(self, model, dataset, dataset_val):
         keys = None
 
-        for step in tqdm(range(1,self.cfg.train.steps+1), smoothing=0.1):
+        for step in tqdm(range(1,self.cfg.flow_model.train.steps+1), smoothing=0.1):
 
-            sample = dataset.sample_jax(self.cfg.train.batch_size, keys=keys)
+            sample = dataset.sample_jax(self.cfg.flow_model.train.batch_size, keys=keys)
             model, info = model.update(sample) 
 
             if step % self.training_cfg.log_freq == 0:
                 self.log_info(info, step, prefix="train")
 
                 if dataset_val is not None:
-                    val_batch = dataset_val.sample(self.cfg.train.batch_size, keys=keys)
+                    val_batch = dataset_val.sample_jax(self.cfg.flow_model.train.batch_size, keys=keys)
                     _, val_info= model.update(val_batch)
                     self.log_info(val_info, step, prefix="val")
             
