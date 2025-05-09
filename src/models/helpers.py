@@ -39,7 +39,7 @@ class MLP(nn.Module):
             if i + 1 == len(self.hidden_dims) and self.scale_final is not None:
                 x = nn.Dense(size, kernel_init=default_init(self.scale_final))(x)
             else:
-                x = nn.Dense(size, kernel_init=default_init())(x)
+                x = nn.Dense(size, kernel_init=default_init(), dtype=jnp.float16)(x)
 
             if i + 1 < len(self.hidden_dims) or self.activate_final:
                 if self.dropout_rate is not None and self.dropout_rate > 0:
@@ -52,10 +52,12 @@ class MLP(nn.Module):
 
 class CNN(nn.Module):
     @nn.compact
-    def __call__(self, x):
-        x = nn.Conv(features=32, kernel_size=(3, 3), padding='SAME')(x)
+    def __call__(self, x, training: bool = False):
+        x = jnp.transpose(x, (0, 2, 3, 1))  # to (B, W, H, C)
+        x = nn.Conv(features=32, kernel_size=(3, 3), padding='SAME', dtype=jnp.float16)(x)
         x = nn.relu(x)
-        x = nn.Conv(features=64, kernel_size=(3, 3), padding='SAME')(x)
+        x = nn.Conv(features=32, kernel_size=(3, 3), padding='SAME', dtype=jnp.float16)(x)
         x = nn.relu(x)
-        x = nn.Conv(features=3, kernel_size=(3, 3), padding='SAME')(x)
+        x = nn.Conv(features=3, kernel_size=(3, 3), padding='SAME', dtype=jnp.float16)(x)
+        x = jnp.transpose(x, (0, 3, 1, 2))  # back to (B, C, W, H)
         return x
