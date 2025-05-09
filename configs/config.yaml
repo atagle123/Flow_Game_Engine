@@ -17,15 +17,10 @@ savepath:  ./logs/models/${exp_name}/${seed}
 flow_model:
   network:
     time_emb: 128
-    hidden_dim: 256
-    num_blocks: 3
-    use_layer_norm: True
-    dropout_rate: 0.1
-    schedule: "vp"
 
   train:
-    steps: 2000000
-    cosine_decay: True
+    steps: 10000
     ema_update: 0.001
-    batch_size: 1024
+    batch_size: 2056
     lr: 3e-4
+    cosine_decay: True
