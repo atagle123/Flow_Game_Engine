@@ -30,8 +30,7 @@ class Trainer:
                          dataset_val)
         wandb.finish()
 
-
-    def load_dataset(self, filepath): # TODO falta add weights dataset? maybe use same function... 
+    def load_dataset(self, filepath): 
 
         dataset = Maze_Dataset(filepath)
         
@@ -46,7 +45,6 @@ class Trainer:
 
         if self.training_cfg.wandb_log: wandb.log({f"{prefix}/{k}": v for k, v in info.items()}, step=step)
 
-
     def train_loop(self, model, dataset, dataset_val):
         keys = None
 
@@ -54,7 +52,6 @@ class Trainer:
 
             sample = dataset.sample_jax(self.cfg.train.batch_size, keys=keys)
             model, info = model.update(sample) 
-
 
             if step % self.training_cfg.log_freq == 0:
                 self.log_info(info, step, prefix="train")
