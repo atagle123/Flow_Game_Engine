@@ -1,8 +1,9 @@
 import numpy as np
-from typing import Dict, Iterable, Optional, Tuple, Union
+from typing import Iterable, Optional, Tuple
 import jax
 import jax.numpy as jnp
-from utils.types import DatasetDict
+from src.utils.custom_types import DatasetDict
+from gym.utils import seeding
 
 def _check_lengths(dataset_dict: DatasetDict, dataset_len: Optional[int] = None) -> int:
     for v in dataset_dict.values():
@@ -33,7 +34,21 @@ class Dataset(object):
     def __init__(self, dataset_dict: DatasetDict, seed: Optional[int] = None): # TODO use seed
         self.dataset_dict = dataset_dict
         self.dataset_len = _check_lengths(dataset_dict)
+        self._np_random = None
+        self._seed = None
+        if seed is not None:
+            self.seed(seed)
 
+    @property
+    def np_random(self) -> np.random.RandomState:
+        if self._np_random is None:
+            self.seed()
+        return self._np_random
+
+    def seed(self, seed: Optional[int] = None) -> list:
+        self._np_random, self._seed = seeding.np_random(seed)
+        return [self._seed]
+    
     def __len__(self) -> int:
         return self.dataset_len
 
