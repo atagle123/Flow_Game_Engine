@@ -16,6 +16,6 @@ class FlowModel(nn.Module):
 
         t_ff = self.time_preprocess_cls()(time)
         cond = self.cond_encoder_cls()(t_ff, training=training)
-        reverse_input = jnp.concatenate([a, s, cond], axis=-1)
+        reverse_input = jnp.concatenate([a, s, cond], axis=-1) # TODO cuadrar entradas
 
         return self.reverse_encoder_cls()(reverse_input, training=training)

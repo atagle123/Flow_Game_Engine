@@ -2,10 +2,7 @@ import numpy as np
 from typing import Dict, Iterable, Optional, Tuple, Union
 import jax
 import jax.numpy as jnp
-
-DataType = Union[np.ndarray, Dict[str, "DataType"]]
-
-DatasetDict = Dict[str, DataType]
+from utils.types import DatasetDict
 
 def _check_lengths(dataset_dict: DatasetDict, dataset_len: Optional[int] = None) -> int:
     for v in dataset_dict.values():
@@ -85,12 +82,12 @@ class Maze_Dataset(Dataset):
 
         data = np.load(filepath)
         dataset_dict = {key: data[key] for key in data.files}
-        dataset_dict = self.preprocess_data()
+        dataset_dict = self.preprocess_data(dataset_dict)
 
         super().__init__(dataset_dict)
     
-    def preprocess_data(self):
-        pass
+    def preprocess_data(self, dataset_dict):
+        return (dataset_dict)
 
 
         

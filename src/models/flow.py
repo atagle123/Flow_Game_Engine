@@ -5,17 +5,14 @@ import flax.serialization
 from flax import struct
 from flax.training.train_state import TrainState
 from functools import partial
-from typing import Dict, Tuple, Any
-from jaxtyping import Array, Float
+from typing import Dict, Tuple, Union
 import optax
 import flax.linen as nn
 from models.flow_net import FlowModel
 from models.helpers import CNN, FourierFeatures, MLP
+from utils.types import DatasetDict, PRNGKey
 
-
-PRNGKey = Any
-
-def interpolant(x0: Float[Array, "N"] , x1: Float[Array, "N"], t: float) -> Float[Array, "N"]:
+def interpolant(x0: jnp.ndarray, x1: jnp.ndarray, t: Union[float, jnp.ndarray]) -> jnp.ndarray:
     return x0 + (x1 - x0) * t
 
 velocity = jax.jacrev(interpolant, argnums=2)
@@ -106,11 +103,10 @@ class FlowLearner(struct.PyTreeNode): # TODO, training and sampling, interpolati
                                        xt,
                                        batch["actions"],
                                        t,
-                                       rngs={'dropout': key},
                                        training=True)
             
             loss = ((vt_pred - vt) ** 2)
-            loss = jnp.mean(jnp.sum(loss, axis=-1))  #    loss = jnp.mean((vt_pred - vt) ** 2)
+            loss = jnp.mean(jnp.sum(loss, axis=-1))  #    loss = jnp.mean((vt_pred - vt) ** 2) TODO 
             return loss, {'loss': loss}
 
         grads, info = jax.grad(flow_loss_fn, has_aux=True)(model.flow_model.params)

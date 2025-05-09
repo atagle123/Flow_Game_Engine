@@ -12,11 +12,11 @@ from src.utils.training import Trainer
 CONFIG_PATH = "../configs/D4RL"
 MEMORY_FRACTION = "0.75"
 PREALLOCATE_MEMORY = "true"
-WANDB_LOG = True
+WANDB_LOG = False
 VAL_DATASET = True
 LOG_FREQ = 10000
 SAVE_FREQ = 100000
-DATASET_PATH = "logs/data/data_maze.npz" # TODO test this
+DATASET_PATH = "logs/data/data_maze.npz"
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
