@@ -9,7 +9,7 @@ from typing import Dict, Tuple, Union
 import optax
 import flax.linen as nn
 from src.models.flow_net import FlowModel
-from src.models.helpers import CNN, FourierFeatures, MLP
+from src.models.helpers import SimpleUNet, FourierFeatures, MLP
 from src.utils.custom_types import DatasetDict, PRNGKey
 
 def interpolant(x0: jnp.ndarray, x1: jnp.ndarray, t: Union[float, jnp.ndarray]) -> jnp.ndarray:
@@ -43,25 +43,20 @@ class FlowLearner(struct.PyTreeNode):
 
         time_embedding_cls = partial(FourierFeatures,
                                       output_size=cfg.network.time_emb,
-                                      learnable=True)
+                                      learnable=False)
 
         conditional_model_cls = partial(MLP,
-                                hidden_dims=(cfg.network.time_emb, cfg.network.time_emb),
+                                hidden_dims=(cfg.network.time_emb*2, cfg.network.time_emb*2),
                                 activations=nn.swish,
                                 activate_final=False)
         
-        action_encoder_cls = partial(MLP,
-                                hidden_dims=(cfg.network.time_emb, cfg.network.time_emb, 32),
-                                activations=nn.relu,
-                                activate_final=False)
 
-        base_model_cls = partial(CNN)
+        base_model_cls = partial(SimpleUNet)
                                     
         
         flow_model_def = FlowModel(time_preprocess_cls=time_embedding_cls, # check that the states are pas
                             cond_encoder_cls=conditional_model_cls,
-                            reverse_encoder_cls=base_model_cls, 
-                            action_encoder_cls = action_encoder_cls)
+                            reverse_encoder_cls=base_model_cls)
 
         time = jnp.zeros((1, 1))
         x_dummy = jnp.zeros((1, 3, 12, 12))
@@ -72,7 +67,7 @@ class FlowLearner(struct.PyTreeNode):
         print(f"PARAMS: {count_params(flow_params)}")
         
         if cfg.train.cosine_decay:
-            lr = optax.cosine_decay_schedule(cfg.train.lr, int(cfg.train.steps), alpha = 0.1)
+            lr = optax.cosine_decay_schedule(cfg.train.lr, int(cfg.train.steps), alpha = 0.01)
         else: 
             lr = cfg.train.lr
 
@@ -114,7 +109,12 @@ class FlowLearner(struct.PyTreeNode):
                                        t,
                                        training=True)
             
-            loss = jnp.mean((vt_pred - vt) ** 2)
+            diff = (vt_pred - vt) ** 2
+            loss_c0 = jnp.mean(diff[:,0,:,:])
+            loss_c1 = jnp.mean(diff[:,1,:,:])
+            loss_c2 = jnp.mean(diff[:,2,:,:])
+            loss = loss_c0+loss_c1*60+ loss_c2
+            #loss = jnp.mean((vt_pred - vt) ** 2)
             return loss, {'loss': loss}
 
         grads, info = jax.grad(flow_loss_fn, has_aux=True)(model.flow_model.params)
@@ -135,20 +135,26 @@ class FlowLearner(struct.PyTreeNode):
         new_model, info = new_model.update_model(batch)
         return new_model, info
 
-    def sample(self, observation: jnp.ndarray, action: jnp.ndarray, rng, n_steps = 100):
+    def sample(self, observation: jnp.ndarray, action: jnp.ndarray, n_steps:int = 100):
 
-        assert len(observations.shape) == 1
-        observations = jax.device_put(observations)
-        actions = jax.device_put(actions) 
-        actions = jnp.expand_dims(actions, axis=-1)
+        observation = jax.device_put(observation)
+        action = jax.device_put(action)
+        action = jnp.expand_dims(action, axis=0)
 
         flow_params = self.target_flow_model.params
         timesteps = jnp.linspace(0, 1, n_steps)
-
+        #dt = 1/n_steps # +1?
+        #print(timesteps.shape, observation.shape, action.shape)
         def flow_step(xt, t_pair):
             t_current, t_next = t_pair
             t = jnp.ones(1) * t_current
-            dxt = self.flow_model.apply_fn(flow_params, xt, action, t)
+            t = jnp.expand_dims(t, axis=0)
+            dxt = self.flow_model.apply_fn({"params":flow_params}, 
+                                           xt, 
+                                           action, 
+                                           t,
+                                           training = False)
+            
             xt_new = xt + (t_next - t_current) * dxt
             return xt_new, None
         
@@ -158,9 +164,8 @@ class FlowLearner(struct.PyTreeNode):
             return xt_final
         
         xt_final = run_flow(observation)
-        
-        new_rng, _ = jax.random.split(rng, 2)
-        return xt_final, new_rng
+
+        return xt_final
 
 
     def save(self, savepath, step):
@@ -173,7 +178,7 @@ class FlowLearner(struct.PyTreeNode):
     def load(cls, cfg, dir: str, step): 
         """Load the parameters of the flow model"""
         # Create a new instance of the learner
-        model = cls.create(cfg=cfg.flow_model)
+        model = cls.create(cfg=cfg.flow_model, seed=123)
 
         # Load flow model parameters
         actor_path = os.path.join(dir, f"flow_params_{step}.msgpack")
