@@ -15,6 +15,6 @@ class RandomAgent:
     #def discrete_sample(self): 
 
     def sample_action(self):
-        sample = np.random.choice([0, 1, 2, 3])
+        sample = np.random.choice([0, 1, 2, 3]).astype(np.int8)
 
         return (sample)

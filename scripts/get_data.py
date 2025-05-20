@@ -5,8 +5,8 @@ import numpy as np
 
 def env_loop(env, agent, storage): 
     game_start_obs = np.zeros((3, 12, 12))
-    game_start_action = np.array([0])
-    obs, full_obs = env.reset() 
+    game_start_action = np.int8(0)
+    obs, full_obs = env.reset()
     done = False
     storage.add(game_start_obs, full_obs, game_start_action, done)
 
