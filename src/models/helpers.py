@@ -1,6 +1,7 @@
 import jax.numpy as jnp
 import flax.linen as nn
 from typing import Callable, Optional, Sequence
+import jax
 
 default_init = nn.initializers.xavier_uniform
 
@@ -39,7 +40,7 @@ class MLP(nn.Module):
             if i + 1 == len(self.hidden_dims) and self.scale_final is not None:
                 x = nn.Dense(size, kernel_init=default_init(self.scale_final))(x)
             else:
-                x = nn.Dense(size, kernel_init=default_init(), dtype=jnp.float16)(x)
+                x = nn.Dense(size, kernel_init=default_init(), dtype=jnp.float16)(x) # TODO change to 32
 
             if i + 1 < len(self.hidden_dims) or self.activate_final:
                 if self.dropout_rate is not None and self.dropout_rate > 0:
@@ -49,15 +50,44 @@ class MLP(nn.Module):
                 x = self.activations(x)
         return x
     
+class ConvBlock(nn.Module):
+    out_channels: int
+    time_emb_dim: int
+    down: bool
 
-class CNN(nn.Module):
     @nn.compact
-    def __call__(self, x, training: bool = False):
-        x = jnp.transpose(x, (0, 2, 3, 1))  # to (B, W, H, C)
-        x = nn.Conv(features=32, kernel_size=(3, 3), padding='SAME', dtype=jnp.float16)(x)
+    def __call__(self, x, t_emb):
+        t_proj = nn.Dense(self.out_channels)(t_emb)
+        t_proj = t_proj[:, None, None, :]  # reshape for broadcasting
+
+        x = nn.Conv(self.out_channels, kernel_size=(3, 3), padding="SAME")(x)
+        x = x + t_proj
         x = nn.relu(x)
-        x = nn.Conv(features=32, kernel_size=(3, 3), padding='SAME', dtype=jnp.float16)(x)
+        x = nn.Conv(self.out_channels, kernel_size=(3, 3), padding="SAME")(x)
         x = nn.relu(x)
-        x = nn.Conv(features=3, kernel_size=(3, 3), padding='SAME', dtype=jnp.float16)(x)
-        x = jnp.transpose(x, (0, 3, 1, 2))  # back to (B, C, W, H)
+
+        if self.down:
+            x = nn.max_pool(x, window_shape=(2, 2), strides=(2, 2))
+        else:
+            x = jax.image.resize(x, shape=(x.shape[0], x.shape[1]*2, x.shape[2]*2, x.shape[3]), method='nearest')
         return x
+
+    
+class SimpleUNet(nn.Module):
+    def setup(self):
+
+        self.down1 = ConvBlock(32, 64, down=True)
+        self.down2 = ConvBlock(64, 64, down=True)
+        self.up1 = ConvBlock(32, 64, down=False)
+        self.up2 = ConvBlock(3, 32, down=False)
+
+    def __call__(self, x, t_emb):
+        x = jnp.transpose(x, (0, 2, 3, 1))  # to (B, W, H, C)
+
+        d1 = self.down1(x, t_emb)
+        d2 = self.down2(d1, t_emb)
+        u1 = self.up1(d2, t_emb)
+        u2 = self.up2(u1, t_emb)
+        out = jnp.transpose(u2, (0, 3, 1, 2))  # back to (B, C, W, H)
+
+        return out
