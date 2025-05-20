@@ -1,8 +1,8 @@
 import numpy as np
-from typing import Dict, Iterable, Optional, Tuple, Union, Any
+from typing import Union
 
 
-DataType = Union[np.ndarray, Dict[str, "DataType"]]
+DataType = Union[np.ndarray, dict[str, "DataType"]]
 
-DatasetDict = Dict[str, DataType]
-PRNGKey = Any
+DatasetDict = dict[str, DataType]
+PRNGKey = object
