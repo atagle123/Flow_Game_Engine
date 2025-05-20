@@ -2,60 +2,91 @@ import os
 import logging
 import hydra
 from dataclasses import dataclass
+from omegaconf import DictConfig
+
 from src.utils.training import Trainer
 
+# ---------------------------- #
+#     Constants & Defaults     #
+# ---------------------------- #
 
-CONFIG_PATH = "../configs"
-MEMORY_FRACTION = "0.75"
-PREALLOCATE_MEMORY = "true"
-WANDB_LOG = False
-VAL_DATASET = True
-LOG_FREQ = 100
-SAVE_FREQ = 100000
-DATASET_PATH = "logs/data/data_maze.npz"
+@dataclass(frozen=True)
+class Defaults:
+    config_path: str = "../configs"
+    memory_fraction: str = "0.75"
+    preallocate_memory: str = "true"
+    wandb_log: bool = False
+    val_dataset: bool = True
+    log_freq: int = 10000
+    save_freq: int = 10000
+    dataset_path: str = "logs/data/data_maze.npz"
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+    
+DEFAULTS = Defaults()
+
+# ---------------------------- #
+#       Training Config        #
+# ---------------------------- #
 
 @dataclass
 class TrainingConfig:
     log_freq: int
     save_freq: int
-    wandb_log : bool
-    val_dataset : bool
-    dataset_filepath: str
+    wandb_log: bool
+    val_dataset: bool
+    dataset_path: str
 
-def configure_environment():
-    """
-    Configure environment variables for JAX.
-    """
-    os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = MEMORY_FRACTION
-    os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = PREALLOCATE_MEMORY
-    logger.info("Environment variables configured for JAX.")
 
-    TRAINING_CONFIG = TrainingConfig(
-                                log_freq=LOG_FREQ,
-                                save_freq=SAVE_FREQ,
-                                wandb_log=WANDB_LOG,
-                                val_dataset=VAL_DATASET,
-                                dataset_filepath = DATASET_PATH
-                                )
-    return TRAINING_CONFIG
+# ---------------------------- #
+#     Utility Functions        #
+# ---------------------------- #
 
-@hydra.main(config_path=CONFIG_PATH, config_name="config", version_base="1.3")
-def main(cfg):
+def configure_environment(memory_fraction: str, preallocate: str) -> None:
     """
-    Main function to start the training process.
+    Set up memory configuration for JAX runtime.
     """
-    logger.info(f"Starting experiment with config: {cfg}")
+    os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = memory_fraction
+    os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = preallocate
+    logger.info("JAX environment configured: memory_fraction=%s, preallocate=%s", memory_fraction, preallocate)
 
-    training_config = configure_environment()
+
+def build_training_config(defaults: Defaults) -> TrainingConfig:
+    """
+    Build a training config object from the defaults.
+    """
+    return TrainingConfig(
+        log_freq=defaults.log_freq,
+        save_freq=defaults.save_freq,
+        wandb_log=defaults.wandb_log,
+        val_dataset=defaults.val_dataset,
+        dataset_path=defaults.dataset_path
+    )
+
+
+# ---------------------------- #
+#        Main Script           #
+# ---------------------------- #
+
+# Logging setup
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+@hydra.main(config_path=DEFAULTS.config_path, config_name="config", version_base="1.3")
+def main(cfg: DictConfig) -> None:
+    """
+    Main entry point for training execution.
+    """
+    logger.info("Starting experiment with configuration: %s", cfg)
+
+    configure_environment(DEFAULTS.memory_fraction, DEFAULTS.preallocate_memory)
+    training_config = build_training_config(DEFAULTS)
 
     trainer = Trainer(cfg, training_config)
     trainer.train()
-    
-    logger.info("Training completed.")
+
+    logger.info("Training completed successfully.")
+
 
 if __name__ == "__main__":
     main()

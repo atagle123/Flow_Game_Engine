@@ -20,7 +20,7 @@ class Trainer:
 
 
     def train(self):
-        dataset, dataset_val = self.load_dataset(self.training_cfg.dataset_filepath)
+        dataset, dataset_val = self.load_dataset(self.training_cfg.dataset_path)
 
         model_cls = "FlowLearner"
         model = globals()[model_cls].create(self.cfg.seed, self.cfg.flow_model)
@@ -38,7 +38,7 @@ class Trainer:
 
         return dataset, dataset_val
 
-    def log_info(self, info: Dict, step: int, prefix: str):
+    def _log_info(self, info: Dict, step: int, prefix: str):
 
         info_str = " | ".join([f"{prefix}/{k}: {v}" for k, v in info.items()])
         print(f"{info_str} | (step {step})")
@@ -54,12 +54,12 @@ class Trainer:
             model, info = model.update(sample) 
 
             if step % self.training_cfg.log_freq == 0:
-                self.log_info(info, step, prefix="train")
+                self._log_info(info, step, prefix="train")
 
                 if dataset_val is not None:
                     val_batch = dataset_val.sample_jax(self.cfg.flow_model.train.batch_size, keys=keys)
                     _, val_info= model.update(val_batch)
-                    self.log_info(val_info, step, prefix="val")
+                    self._log_info(val_info, step, prefix="val")
             
             if step % self.training_cfg.save_freq == 0 or step==1:
                 model.save(self.cfg.savepath, step)
