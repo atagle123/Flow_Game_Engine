@@ -15,9 +15,9 @@ class Defaults:
     config_path: str = "../configs"
     memory_fraction: str = "0.75"
     preallocate_memory: str = "true"
-    wandb_log: bool = False
+    wandb_log: bool = True
     val_dataset: bool = True
-    log_freq: int = 10000
+    log_freq: int = 1000
     save_freq: int = 10000
     dataset_path: str = "logs/data/data_maze.npz"
 

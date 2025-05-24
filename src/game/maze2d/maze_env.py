@@ -50,7 +50,7 @@ class MazeEnv(gym.Env):
         done = self.player_pos == self.goal_pos
         reward = 1 if done else -0.01
 
-        return self._get_obs(), reward, done, self._get_full_obs() # 1 channel is the maze, other is the player pos, other the goal pos
+        return self._get_obs(), reward, done, self._get_full_obs() # 1 channel is the maze, 2 is the player pos, 3 the goal pos
 
     def _get_full_obs(self):
         pos_player_grid = np.zeros_like(self.maze)
