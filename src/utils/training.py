@@ -1,7 +1,7 @@
 import os
 from omegaconf import OmegaConf
 from tqdm import tqdm
-from src.utils.dataset import Maze_Dataset
+from src.dataset.dataset import Maze_Dataset
 import wandb
 from typing import Dict
 from src.models.flow import FlowLearner
@@ -40,7 +40,7 @@ class Trainer:
 
     def _log_info(self, info: Dict, step: int, prefix: str):
 
-        info_str = " | ".join([f"{prefix}/{k}: {v}" for k, v in info.items()])
+        info_str = " | ".join([f"{prefix}/{k}: {v:.4f}" for k, v in info.items()])
         print(f"{info_str} | (step {step})")
 
         if self.training_cfg.wandb_log: wandb.log({f"{prefix}/{k}": v for k, v in info.items()}, step=step)
