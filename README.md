@@ -13,13 +13,10 @@ Such a formulation enables modeling in environments where the full current state
 To set up the environment:
 
 ```bash
-# Install dependencies
 conda env create -f environment.yaml
 
-# Activate environment
 conda activate flow_game_engine
 
-# Install project in "editable" mode
 conda install conda-build  # if not already installed
 conda develop .
 ```
@@ -35,7 +32,6 @@ python scripts/get_data.py
 python scripts/train.py
 
 # Play
-
 python scripts/play.py
 ```
 
