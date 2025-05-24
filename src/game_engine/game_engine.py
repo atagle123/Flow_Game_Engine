@@ -21,17 +21,15 @@ class GameEngine:
 
         #player_pos = [1, 0]
         #goal_pos = [GRID_WIDTH - 2, GRID_HEIGHT - 1]
-        KEY_TO_ACTION = {
+        KEY_TO_ACTION = {  # 0=up, 1=right, 2=down, 3=left
                         pygame.K_UP: 0,
-                        pygame.K_DOWN: 1,
-                        pygame.K_LEFT: 2,
-                        pygame.K_RIGHT: 3,
+                        pygame.K_DOWN: 2,
+                        pygame.K_LEFT: 3,
+                        pygame.K_RIGHT: 1,
                     }
 
         # === Game Loop ===
         running = True
-        # visualize one time first the init... 
-        init_obs = np.zeros((1, 3, 12, 12))
         game_start_action = np.array([0])
 
         maze = np.array([
@@ -50,15 +48,14 @@ class GameEngine:
         ])
 
         player_pos = np.zeros((12, 12), dtype=float)
-        player_pos[1, 0] = 1.0
+        player_pos[0, 1] = 1.0
         goal_pos = np.zeros((12, 12), dtype=float)
-        goal_pos[-2, -1] = 1.0
-        init_obs = np.stack((maze,player_pos, goal_pos), axis=0)
-       # init_obs = np.zeros((3, 12, 12))
+        goal_pos[-1, -2] = 1.0
+        init_obs = np.stack((maze, player_pos, goal_pos), axis=0)
         init_obs = np.expand_dims(init_obs, axis = 0)
 
-        #self.draw(init_obs)
-        obs = self.model.sample(init_obs, game_start_action, n_steps = 10)
+        self.draw(init_obs)
+        obs = self.model.sample(init_obs, game_start_action, n_steps = 50)
 
         self.draw(obs)
         while running:
@@ -78,12 +75,16 @@ class GameEngine:
                     break
 
             if action is not None:
-
-                action = np.array([action])
-                obs = self.model.sample(obs, action, n_steps = 10) # maybe sample a batch and avg the results to a more robust result. 
-
-                self.draw(obs)
-                #pygame.time.wait(200)
+                sampling_attempts = 2
+                while sampling_attempts > 0:
+                    try:
+                        obs = self.model.sample(obs, np.array([action]), n_steps = 1)
+                        self.draw(obs)
+                        break
+                    except Exception as e:
+                        print(f"Sampling failed: {e}. Retrying...")
+                        sampling_attempts -= 1
+                
 
         pygame.quit()
         sys.exit()
@@ -109,9 +110,9 @@ class GameEngine:
                 if maze[y,x] == 1:
                     pygame.draw.rect(self.screen, WHITE, rect)
         # Player
-        px, py = player_pos
+        py, px = player_pos
         pygame.draw.rect(self.screen, RED, (px*CELL_SIZE+5, py*CELL_SIZE+5, CELL_SIZE-10, CELL_SIZE-10))
         # Goal
-        gx, gy = goal_pos
+        gy, gx = goal_pos
         pygame.draw.rect(self.screen, GREEN, (gx*CELL_SIZE+5, gy*CELL_SIZE+5, CELL_SIZE-10, CELL_SIZE-10))
         pygame.display.flip()
