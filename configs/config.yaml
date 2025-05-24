@@ -16,11 +16,11 @@ savepath:  ./logs/models/${exp_name}/${seed}
 
 flow_model:
   network:
-    time_emb: 128
+    base_channels: 32
 
   train:
-    steps: 10000
+    steps: 200000
     ema_update: 0.001
-    batch_size: 2056
+    batch_size: 128
     lr: 3e-4
-    cosine_decay: True
+    cosine_decay: False
