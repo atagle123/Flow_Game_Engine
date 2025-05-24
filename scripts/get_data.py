@@ -4,11 +4,11 @@ from src.utils.data_buffer import DataStorage
 import numpy as np
 
 def env_loop(env, agent, storage): 
-    game_start_obs = np.zeros((3, 12, 12))
+    #game_start_obs = np.zeros((3, 12, 12))
     game_start_action = np.int8(0)
     obs, full_obs = env.reset()
     done = False
-    storage.add(game_start_obs, full_obs, game_start_action, done)
+    storage.add(full_obs, full_obs, game_start_action, done)
 
     while not done: 
         action = agent.sample_action()
