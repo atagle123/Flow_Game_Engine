@@ -8,8 +8,7 @@ from functools import partial
 from typing import Dict, Tuple, Union
 import optax
 import flax.linen as nn
-from src.models.flow_net import FlowModel
-from src.models.helpers import SimpleUNet, FourierFeatures, MLP
+from src.models.nets import UNet
 from src.utils.custom_types import DatasetDict, PRNGKey
 
 def interpolant(x0: jnp.ndarray, x1: jnp.ndarray, t: Union[float, jnp.ndarray]) -> jnp.ndarray:
@@ -40,23 +39,8 @@ class FlowLearner(struct.PyTreeNode):
         rng, flow_key = jax.random.split(rng, 2)
 
         ### Flow model ###
-
-        time_embedding_cls = partial(FourierFeatures,
-                                      output_size=cfg.network.time_emb,
-                                      learnable=False)
-
-        conditional_model_cls = partial(MLP,
-                                hidden_dims=(cfg.network.time_emb*2, cfg.network.time_emb*2),
-                                activations=nn.swish,
-                                activate_final=False)
         
-
-        base_model_cls = partial(SimpleUNet)
-                                    
-        
-        flow_model_def = FlowModel(time_preprocess_cls=time_embedding_cls, # check that the states are pas
-                            cond_encoder_cls=conditional_model_cls,
-                            reverse_encoder_cls=base_model_cls)
+        flow_model_def = UNet(base_channels=cfg.network.base_channels)
 
         time = jnp.zeros((1, 1))
         x_dummy = jnp.zeros((1, 3, 12, 12))
@@ -73,7 +57,7 @@ class FlowLearner(struct.PyTreeNode):
 
         flow_model = TrainState.create(apply_fn=flow_model_def.apply,
                                         params=flow_params,
-                                        tx=optax.adamw(learning_rate=lr)) 
+                                        tx=optax.adam(learning_rate=lr)) 
         
         target_flow_model = TrainState.create(apply_fn=flow_model_def.apply,
                                                params=flow_params,
@@ -106,14 +90,13 @@ class FlowLearner(struct.PyTreeNode):
             vt_pred = model.flow_model.apply_fn({'params': flow_model_params},
                                        xt,
                                        actions,
-                                       t,
-                                       training=True)
+                                       t)
             
             diff = (vt_pred - vt) ** 2
             loss_c0 = jnp.mean(diff[:,0,:,:])
             loss_c1 = jnp.mean(diff[:,1,:,:])
             loss_c2 = jnp.mean(diff[:,2,:,:])
-            loss = loss_c0+loss_c1*60+ loss_c2
+            loss = loss_c0+loss_c1*20+ loss_c2
             #loss = jnp.mean((vt_pred - vt) ** 2)
             return loss, {'loss': loss}
 
@@ -143,8 +126,6 @@ class FlowLearner(struct.PyTreeNode):
 
         flow_params = self.target_flow_model.params
         timesteps = jnp.linspace(0, 1, n_steps)
-        #dt = 1/n_steps # +1?
-        #print(timesteps.shape, observation.shape, action.shape)
         def flow_step(xt, t_pair):
             t_current, t_next = t_pair
             t = jnp.ones(1) * t_current
@@ -152,8 +133,7 @@ class FlowLearner(struct.PyTreeNode):
             dxt = self.flow_model.apply_fn({"params":flow_params}, 
                                            xt, 
                                            action, 
-                                           t,
-                                           training = False)
+                                           t)
             
             xt_new = xt + (t_next - t_current) * dxt
             return xt_new, None
@@ -172,7 +152,7 @@ class FlowLearner(struct.PyTreeNode):
 
         actor_path = os.path.join(savepath, f"flow_params_{step}.msgpack")
         with open(actor_path, "wb") as f:
-            f.write(flax.serialization.to_bytes(self.target_flow_model.params))
+            f.write(flax.serialization.to_bytes(self.flow_model.params))
 
     @classmethod
     def load(cls, cfg, dir: str, step): 
@@ -183,7 +163,7 @@ class FlowLearner(struct.PyTreeNode):
         # Load flow model parameters
         actor_path = os.path.join(dir, f"flow_params_{step}.msgpack")
         with open(actor_path, "rb") as f:
-            actor_params = flax.serialization.from_bytes(model.target_flow_model.params, f.read())
+            actor_params = flax.serialization.from_bytes(model.flow_model.params, f.read())
         model = model.replace(target_flow_model=model.target_flow_model.replace(params=actor_params))
 
         print(f"Model loaded from {dir}")
