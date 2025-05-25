@@ -23,6 +23,8 @@ conda develop .
 
 ## Quick start
 
+Change the training hyperparameters in configs/config.yaml.
+
 ```bash
 
 # Generate Dataset
@@ -34,7 +36,3 @@ python scripts/train.py
 # Play
 python scripts/play.py
 ```
-
-### Project structure
-
-
