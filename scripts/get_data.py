@@ -3,14 +3,15 @@ from src.agent.random_agent import RandomAgent
 from src.utils.data_buffer import DataStorage
 import numpy as np
 
-def env_loop(env, agent, storage): 
-    #game_start_obs = np.zeros((3, 12, 12))
+
+def env_loop(env, agent, storage):
+    # game_start_obs = np.zeros((3, 12, 12))
     game_start_action = np.int8(0)
     obs, full_obs = env.reset()
     done = False
     storage.add(full_obs, full_obs, game_start_action, done)
 
-    while not done: 
+    while not done:
         action = agent.sample_action()
         next_obs, reward, done, next_full_obs = env.step(action)
 
@@ -18,19 +19,18 @@ def env_loop(env, agent, storage):
         obs = next_obs
         full_obs = next_full_obs
 
-        #env.render()
+        # env.render()
     env.close()
-    return (storage)
+    return storage
 
 
 def main():
-    """
-    """
+    """ """
     filepath = "logs/data"
     filename = "data_maze.npz"
     num_episodes = 100
 
-    env = MazeEnv() # TODO register the env
+    env = MazeEnv()
     agent = RandomAgent()
     storage = DataStorage()
 
@@ -39,5 +39,6 @@ def main():
 
     storage.download_data(filepath, filename)
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     main()

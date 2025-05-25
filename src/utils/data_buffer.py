@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import os
 
+
 @dataclass
 class DataStorage:
     states: list = field(default_factory=list)
@@ -9,7 +10,7 @@ class DataStorage:
     next_states: list = field(default_factory=list)
     dones: list = field(default_factory=list)
 
-    def add(self, obs, next_obs, action, done): 
+    def add(self, obs, next_obs, action, done):
         self.states.append(obs)
         self.next_states.append(next_obs)
         self.actions.append(action)
@@ -25,11 +26,11 @@ class DataStorage:
             "states": array_states,
             "actions": array_actions,
             "next_states": array_next_states,
-            "dones": array_dones
+            "dones": array_dones,
         }
 
     def download_data(self, filepath, filename):
         data = self._format_data()
-        
+
         os.makedirs(filepath, exist_ok=True)
         np.savez(f"{filepath}/{filename}", **data)

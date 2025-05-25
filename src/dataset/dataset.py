@@ -5,6 +5,7 @@ import jax.numpy as jnp
 from src.utils.custom_types import DatasetDict
 from gym.utils import seeding
 
+
 def _check_lengths(dataset_dict: DatasetDict, dataset_len: Optional[int] = None) -> int:
     for v in dataset_dict.values():
         if isinstance(v, dict):
@@ -16,6 +17,7 @@ def _check_lengths(dataset_dict: DatasetDict, dataset_len: Optional[int] = None)
         else:
             raise TypeError("Unsupported type.")
     return dataset_len
+
 
 def _subselect(dataset_dict: DatasetDict, index: np.ndarray) -> DatasetDict:
     new_dataset_dict = {}
@@ -31,7 +33,9 @@ def _subselect(dataset_dict: DatasetDict, index: np.ndarray) -> DatasetDict:
 
 
 class Dataset(object):
-    def __init__(self, dataset_dict: DatasetDict, seed: Optional[int] = None): # TODO use seed
+    def __init__(
+        self, dataset_dict: DatasetDict, seed: Optional[int] = None
+    ):  # TODO use seed
         self.dataset_dict = dataset_dict
         self.dataset_len = _check_lengths(dataset_dict)
         self._np_random = None
@@ -48,11 +52,13 @@ class Dataset(object):
     def seed(self, seed: Optional[int] = None) -> list:
         self._np_random, self._seed = seeding.np_random(seed)
         return [self._seed]
-    
+
     def __len__(self) -> int:
         return self.dataset_len
 
-    def sample_jax(self, batch_size: int, keys: Optional[Iterable[str]] = None): # TODO se puede hacer mas eficiente sacando llaves, tambien cambiar y agregar llaves
+    def sample_jax(
+        self, batch_size: int, keys: Optional[Iterable[str]] = None
+    ):  # TODO se puede hacer mas eficiente sacando llaves, tambien cambiar y agregar llaves
         if not hasattr(self, "rng"):
             self.rng = jax.random.PRNGKey(42)
 
@@ -91,6 +97,7 @@ class Dataset(object):
         test_dataset_dict = _subselect(self.dataset_dict, test_index)
         return Dataset(train_dataset_dict), Dataset(test_dataset_dict)
 
+
 class Maze_Dataset(Dataset):
 
     def __init__(self, filepath):
@@ -100,9 +107,6 @@ class Maze_Dataset(Dataset):
         dataset_dict = self.preprocess_data(dataset_dict)
 
         super().__init__(dataset_dict)
-    
+
     def preprocess_data(self, dataset_dict):
-        return (dataset_dict)
-
-
-        
+        return dataset_dict

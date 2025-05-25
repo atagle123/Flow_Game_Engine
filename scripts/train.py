@@ -10,6 +10,7 @@ from src.utils.training import Trainer
 #     Constants & Defaults     #
 # ---------------------------- #
 
+
 @dataclass(frozen=True)
 class Defaults:
     config_path: str = "../configs"
@@ -21,12 +22,13 @@ class Defaults:
     save_freq: int = 10000
     dataset_path: str = "logs/data/data_maze.npz"
 
-    
+
 DEFAULTS = Defaults()
 
 # ---------------------------- #
 #       Training Config        #
 # ---------------------------- #
+
 
 @dataclass
 class TrainingConfig:
@@ -41,13 +43,18 @@ class TrainingConfig:
 #     Utility Functions        #
 # ---------------------------- #
 
+
 def configure_environment(memory_fraction: str, preallocate: str) -> None:
     """
     Set up memory configuration for JAX runtime.
     """
     os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = memory_fraction
     os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = preallocate
-    logger.info("JAX environment configured: memory_fraction=%s, preallocate=%s", memory_fraction, preallocate)
+    logger.info(
+        "JAX environment configured: memory_fraction=%s, preallocate=%s",
+        memory_fraction,
+        preallocate,
+    )
 
 
 def build_training_config(defaults: Defaults) -> TrainingConfig:
@@ -59,7 +66,7 @@ def build_training_config(defaults: Defaults) -> TrainingConfig:
         save_freq=defaults.save_freq,
         wandb_log=defaults.wandb_log,
         val_dataset=defaults.val_dataset,
-        dataset_path=defaults.dataset_path
+        dataset_path=defaults.dataset_path,
     )
 
 

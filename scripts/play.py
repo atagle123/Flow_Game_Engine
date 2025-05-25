@@ -10,7 +10,9 @@ config_path = f"../logs/models/flow_engine/{SEED}/.hydra"
 @hydra.main(config_path=config_path, config_name="config", version_base="1.3")
 def main(cfg) -> None:
     model_cls = "FlowLearner"
-    model = globals()[model_cls].load(cfg, dir = cfg.savepath, step = cfg.flow_model.train.steps) # Load latest model step
+    model = globals()[model_cls].load(
+        cfg, dir=cfg.savepath, step=cfg.flow_model.train.steps
+    )  # Load latest model step
 
     Game_Engine = GameEngine(model=model)
 
