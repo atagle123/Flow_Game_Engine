@@ -76,38 +76,3 @@ while running:
 
 pygame.quit()
 sys.exit()
-
-
-
-
-
-
-
-# === Maze Generation using DFS ===
-def generate_maze(w, h):
-    maze = [[1 for _ in range(w)] for _ in range(h)]
-    stack = [(0, 0)]
-    visited = set()
-    dirs = [(0,1),(1,0),(0,-1),(-1,0)]
-
-    def in_bounds(x, y): return 0 <= x < w and 0 <= y < h
-
-    while stack:
-        x, y = stack[-1]
-        visited.add((x, y))
-        maze[y][x] = 0
-
-        neighbors = []
-        for dx, dy in dirs:
-            nx, ny = x + dx*2, y + dy*2
-            if in_bounds(nx, ny) and (nx, ny) not in visited:
-                neighbors.append((nx, ny, dx, dy))
-
-        if neighbors:
-            nx, ny, dx, dy = random.choice(neighbors)
-            maze[y+dy][x+dx] = 0  # carve path
-            stack.append((nx, ny))
-        else:
-            stack.pop()
-
-    return maze

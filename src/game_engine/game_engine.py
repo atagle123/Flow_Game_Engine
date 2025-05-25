@@ -12,15 +12,13 @@ class GameEngine:
     def __init__(self, model):
         self.model = model
 
-    def play(self):
+    def play(self, n_flow_steps: int = 10):
         # === Game Setup ===
         pygame.init()
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Maze Game")
         clock = pygame.time.Clock()
 
-        #player_pos = [1, 0]
-        #goal_pos = [GRID_WIDTH - 2, GRID_HEIGHT - 1]
         KEY_TO_ACTION = {  # 0=up, 1=right, 2=down, 3=left
                         pygame.K_UP: 0,
                         pygame.K_DOWN: 2,
@@ -55,7 +53,7 @@ class GameEngine:
         init_obs = np.expand_dims(init_obs, axis = 0)
 
         self.draw(init_obs)
-        obs = self.model.sample(init_obs, game_start_action, n_steps = 50)
+        obs = self.model.sample(init_obs, game_start_action, n_steps = n_flow_steps) # init obs to start the game
 
         self.draw(obs)
         while running:
@@ -78,7 +76,7 @@ class GameEngine:
                 sampling_attempts = 2
                 while sampling_attempts > 0:
                     try:
-                        obs = self.model.sample(obs, np.array([action]), n_steps = 1)
+                        obs = self.model.sample(obs, np.array([action]), n_steps = n_flow_steps)
                         self.draw(obs)
                         break
                     except Exception as e:
@@ -90,8 +88,7 @@ class GameEngine:
         sys.exit()
 
 
-    def format_observations(self, obs):
-        # manage where the obs are only zeros in the maze... 
+    def _format_observations(self, obs):
         obs = jnp.round(jnp.squeeze(obs))
         maze = obs[0,:,:]
         player = obs[1,:,:]
@@ -102,7 +99,7 @@ class GameEngine:
         return (maze, player_pos[0], goal_pos[0])
     
     def draw(self, obs):
-        maze, player_pos, goal_pos = self.format_observations(obs)
+        maze, player_pos, goal_pos = self._format_observations(obs)
         self.screen.fill(BLACK)
         for y in range(GRID_HEIGHT):
             for x in range(GRID_WIDTH):

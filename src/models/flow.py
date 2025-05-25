@@ -4,7 +4,6 @@ import jax.numpy as jnp
 import flax.serialization
 from flax import struct
 from flax.training.train_state import TrainState
-from functools import partial
 from typing import Dict, Tuple, Union
 import optax
 import flax.linen as nn
@@ -22,13 +21,12 @@ velocity = jax.vmap(velocity)
 def count_params(params): 
     return sum(jnp.prod(jnp.array(v.shape)) for v in jax.tree_util.tree_leaves(params))
 
+
 class FlowLearner(struct.PyTreeNode):
     flow_model: TrainState
     target_flow_model: TrainState
     flow_tau: float
     rng: PRNGKey
-
-    # data dim, t steps, interpolant, 
 
     @classmethod
     def create(cls,
@@ -69,6 +67,7 @@ class FlowLearner(struct.PyTreeNode):
                 target_flow_model=target_flow_model,
                 rng=rng,
                 flow_tau=cfg.train.ema_update)
+    
 
     def update_model(model, batch: DatasetDict) -> Tuple[struct.PyTreeNode, Dict[str, float]]:
         rng = model.rng
@@ -92,12 +91,7 @@ class FlowLearner(struct.PyTreeNode):
                                        actions,
                                        t)
             
-            diff = (vt_pred - vt) ** 2
-            loss_c0 = jnp.mean(diff[:,0,:,:])
-            loss_c1 = jnp.mean(diff[:,1,:,:])
-            loss_c2 = jnp.mean(diff[:,2,:,:])
-            loss = loss_c0+loss_c1*20+ loss_c2
-            #loss = jnp.mean((vt_pred - vt) ** 2)
+            loss = jnp.mean((vt_pred - vt) ** 2)
             return loss, {'loss': loss}
 
         grads, info = jax.grad(flow_loss_fn, has_aux=True)(model.flow_model.params)
@@ -117,6 +111,7 @@ class FlowLearner(struct.PyTreeNode):
         new_model = self
         new_model, info = new_model.update_model(batch)
         return new_model, info
+
 
     def sample(self, observation: jnp.ndarray, action: jnp.ndarray, n_steps:int = 100):
 

@@ -2,7 +2,7 @@ defaults:
   - _self_
 
 exp_name: "flow_engine"
-seed: 685
+seed: 123
 
 
 wandb:
@@ -21,6 +21,6 @@ flow_model:
   train:
     steps: 200000
     ema_update: 0.001
-    batch_size: 128
+    batch_size: 256
     lr: 3e-4
-    cosine_decay: False
+    cosine_decay: True
